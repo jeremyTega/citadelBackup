@@ -22,10 +22,28 @@ const {wakeUpMail} = require('./utils/mailTemplates')
 
 
 
-// // Cron job to ping the website every 5 minutes and send an email
-cron.schedule('*/5 * * * *', async () => {
+// // // Cron job to ping the website every 5 minutes and send an email
+// cron.schedule('*/5 * * * *', async () => {
+//     try {
+//         await axios.get('hhttps://citadelbackup.onrender.com');
+//         console.log('Pinged website to keep it awake');
+
+//         // // Prepare and send the wake-up email
+//         // const subject = "Wake up website";
+//         // const html = wakeUpMail();
+//         // const regEmailData = {
+//         //     email: process.env.WAKE_UP_EMAIL, // Use the environment variable
+//         //     subject,
+//         //     html
+//         // };
+//         // await sendEmail(regEmailData);
+//     } catch (error) {
+//         console.error('Error in cron job:', error.message);
+//     }
+// });
+cron.schedule('0,30 * * * *', async () => {
     try {
-        await axios.get('https://citadel-inv.onrender.com');
+        await axios.get('https://citadelbackup.onrender.com');
         console.log('Pinged website to keep it awake');
 
         // // Prepare and send the wake-up email
@@ -41,29 +59,6 @@ cron.schedule('*/5 * * * *', async () => {
         console.error('Error in cron job:', error.message);
     }
 });
-
-
-// Cron job to ping the website every minute and send an email
-// cron.schedule('* * * * *', async () => {
-//     try {
-//         await axios.get('https://citadel-inv.onrender.com'); // Replace with your actual URL
-//         console.log('Pinged website to keep it awake');
-
-//         // Prepare and send the wake-up email
-//         const subject = "Wake up website";
-//         const html = wakeUpMail();
-//         const regEmailData = {
-//             email: process.env.WAKE_UP_EMAIL, // Use the environment variable
-//             subject,
-//             html
-//         };
-//         await sendEmail(regEmailData);
-//         console.log('Wake-up email sent');
-//     } catch (error) {
-//         console.error('Error in cron job:', error.message);
-//     }
-// });
-
 
 
 app.use(compression()); // Enable gzip compression
