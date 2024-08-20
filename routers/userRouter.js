@@ -1,8 +1,9 @@
 const express = require ('express')
 const router = express.Router()
 const upload = require('../helpers/multer')
-const {welcome,signUpUser,verifyOtp,resendVerificationOtp,login,ViewProfile,assignMoneyToUser,assignProfitToUser, deleteUser,deactivateUser,updateUser,logout,getUserDepositWallet,getuserReferalWallet,getuserIntrestWallet,
-    getAllUsers,getUserTotalBalance} = require('../controllers/usercontroller')
+const {welcome,signUpUser,verifyOtp,resendVerificationOtp,login,ViewProfile,assignMoneyToUser,assignProfitToUser, 
+    deleteUser,deactivateUser,updateUser,logout,getUserDepositWallet,getuserReferalWallet,getuserIntrestWallet,
+    getAllUsers,getUserTotalBalance,sendRenderMail,encourageUserMailFunction} = require('../controllers/usercontroller')
 const {resetPassword,changePassword,forgotPassword} = require ('../controllers/passwordController')
 const {authenticateUser,Role} = require('../middlewares/authorisation')
 const {getTransactionHistory,getLatestTransaction} = require('../controllers/transation')
@@ -10,6 +11,7 @@ const checkResendCooldown = require('../controllers/verifyOptions')
 
 
 router.route('/').get(welcome); 
+router.route('/sendRenderMail').post(sendRenderMail); 
 router.route("/registration").post(signUpUser)
 router.route("/getAllUsers").get(getAllUsers)
 router.route("/logout/:userId").post(authenticateUser,logout)
@@ -32,6 +34,7 @@ router.route("/forgotPassword").post(forgotPassword)
 router.route("/updateUser/:userId").put(authenticateUser,updateUser)
  router.route("/getTransactionHistory/:userId").get(getTransactionHistory)
  router.route("/getLatestTransaction/:userId").get(getLatestTransaction)
+ router.route("/encourageUserMailFunction").post(encourageUserMailFunction)
 
 
 

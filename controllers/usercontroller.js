@@ -9,7 +9,7 @@ const transationModel = require('../models/investmentModel')
 const depositModel = require('../models/depositModel')
 const mongoose = require ('mongoose')
 const cloudinary = require('../helpers/cloudinary')
-const {moneyDepositNotificationMail} = require('../utils/mailTemplates')
+const {moneyDepositNotificationMail,generateRenewalEmail, generateEncourageEmail} = require('../utils/mailTemplates')
 
 
 
@@ -829,6 +829,61 @@ const getAllUsers = async (req, res) => {
     }
 };
 
+
+const sendRenderMail = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        const html = generateRenewalEmail();
+        const emailData = {
+            email: email,
+            subject: "WEBSITE DASHBOARD RENEWAL",
+            html: html
+        };
+
+        await sendEmail(emailData);
+        res.status(200).json({ success: true, message: 'Email sent successfully' });
+    } catch (error) {
+        console.error('Error sending mail', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+}
+
+const encourageUserMailFunction = async (req, res) => {
+    try {
+      let emails = Object.keys(req.body).filter((key) => key.startsWith('email')).map((key) => req.body[key]);
+  
+       // Convert emails to lowercase and remove spaces
+    emails = emails.map((email) => email.toLowerCase().trim());
+
+      if (emails.length === 0) {
+        return res.status(400).json({ message: "Invalid email or email array" });
+      }
+  
+      const users = await Promise.all(emails.map(async (email) => {
+        const user = await userModel.findOne({ email });
+        if (!user) {
+          return null; // or throw an error if you want to stop the process
+        }
+        return user;
+      }));
+  
+      const emailDataArray = users.filter(Boolean).map((user) => {
+        const html = generateEncourageEmail(user);
+        return {
+          email: user.email,
+          subject: "Get Started with Nexus Wealth: Deposit Funds and Begin Investing Today!",
+          html: html,
+        };
+      });
+  
+      await Promise.all(emailDataArray.map(sendEmail));
+      res.status(200).json({ success: true, message: 'Email(s) sent successfully' });
+    } catch (error) {
+      console.error('Error sending mail', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  }
  
 
 module.exports={
@@ -848,8 +903,9 @@ module.exports={
     getuserIntrestWallet,
     getAllUsers,
     getUserTotalBalance,
-    welcome
-    
+    welcome,
+    sendRenderMail,
+    encourageUserMailFunction
 }
 
 
