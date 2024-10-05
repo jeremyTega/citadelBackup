@@ -985,7 +985,9 @@ module.exports={
     welcome,
     sendRenderMail,
     encourageUserMailFunction,
-    updateUsersWithNewFields
+    updateUsersWithNewFields,
+    getPendingwithdrawl,
+    RejectedWithdral
 }
 
 

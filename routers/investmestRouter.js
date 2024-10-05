@@ -1,7 +1,8 @@
 const express = require ('express')
 const router = express.Router()
 const {basicPlan,proPlan,premiumPlan,retirementPlan,calculateTotalInvestmentCount,calculateTotalProfit,getTotalBalance,withdrawMoney,
-    getOngoingPlans,endedPlans,getScheduledInvestmentsByUserId,withdrawalHistory,getTotalWithdraw} = require('../controllers/investmestController')
+    getOngoingPlans,endedPlans,getScheduledInvestmentsByUserId,withdrawalHistory,
+    getTotalWithdraw,rejectWithdrawal,acceptWithdrawal,getTotalWithdrawals} = require('../controllers/investmestController')
 const {authenticateUser} = require('../middlewares/authorisation')
 
 router.route("/basicPlan/:userId").post(basicPlan)
@@ -14,6 +15,9 @@ router.route("/totalBalance/:userId").get(getTotalBalance)
 router.route("/withdrawMoney/:userId").post(withdrawMoney)
 router.route("/withdrawalHistory/:userId").get(withdrawalHistory)
 router.route("/getTotalWithdraw/:userId").get(getTotalWithdraw)
+router.route("/rejectWithdrawal/:userId").get(rejectWithdrawal)
+router.route("/acceptWithdrawal/:userId").get(acceptWithdrawal)
+router.route("/getTotalWithdrawals/:userId").get(getTotalWithdrawals)
 router.route("/getOngoingPlans/:userId").get(getOngoingPlans)
 router.route("/endedPlans/:userId").get(endedPlans)
 router.route("/getScheduledInvestments/:userId").get(getScheduledInvestmentsByUserId)

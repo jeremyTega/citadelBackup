@@ -4,7 +4,7 @@ const withdrawalModel = require('../models/witdrawalModel')
 const schedule = require('node-schedule');
 const transationModel = require('../models/transationModel')
 const sendEmail = require ('../middlewares/mail')
-const withdrawalRequestMail = require('../utils/mailTemplates')
+const {withdrawalRequestMail} = require('../utils/mailTemplates')
 
 // // Schedule a job to run every day at midnight
 // const job = schedule.scheduleJob('0 0 * * *', async () => {
@@ -848,7 +848,7 @@ const withdrawMoney = async (req, res) => {
          // Prepare and send rejection email
          const html = withdrawalRequestMail(user, usd);
          const notifyUserMail = {
-             email: userEmail,
+             email: user.email,
              subject: "requesting for withdrawal",
              html
          };
@@ -1078,8 +1078,28 @@ const rejectWithdrawal = async (req, res) => {
 };
 
 
+const getTotalWithdrawals = async (req, res) => {
+    try {
+        const { userId } = req.params;
 
+        // Calculate the total sum of all withdrawals for the user
+        const totalWithdrawals = await withdrawalModel.aggregate([
+            { $match: { userId } }, // Match all withdrawals for the user
+            { $group: { _id: null, total: { $sum: "$amount" } } } // Sum up the 'amount' field
+        ]);
 
+        // If no withdrawals, set total to 0
+        const totalWithdrawalAmount = totalWithdrawals.length > 0 ? totalWithdrawals[0].total : 0;
+
+        res.status(200).json({
+            message: 'Total withdrawals retrieved successfully',
+            totalWithdrawalAmount
+        });
+    } catch (error) {
+        console.error('Error retrieving total withdrawals:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
 
 
 module.exports = {
@@ -1095,7 +1115,10 @@ module.exports = {
     endedPlans,
     getScheduledInvestmentsByUserId,
     withdrawalHistory,
-    getTotalWithdraw
+    getTotalWithdraw,
+    acceptWithdrawal,
+    rejectWithdrawal,
+    getTotalWithdrawals
     
 };
 
