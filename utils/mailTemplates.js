@@ -995,6 +995,84 @@ function generateEncourageEmail(user) {
 
 
 
+  function withdrawalRequestMail(user, usd) {
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Withdrawal Request Notification</title>
+        <style>
+            /* Global Styles */
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                text-align: center;
+                background-color: #000000; /* Black background */
+                color: #ffffff; /* White text */
+            }
+            
+            /* Header Styles */
+            .header {
+                background-color: black; /* Black header background */
+                padding: 20px 0;
+                border-radius: 10px; /* Rounded corners */
+            }
+            
+            .header img {
+                width: 150px; /* Adjust the width of the image as needed */
+            }
+            
+            /* Content Styles */
+            .content {
+                padding: 20px;
+            }
+            
+            .details-row {
+                margin-bottom: 10px;
+            }
+
+            .footer {
+                margin-top: 20px;
+                padding-top: 10px;
+                border-top: 1px solid #ffffff;
+                font-size: 12px;
+                color: #b0b0b0;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Header with Logo -->
+        <div class="header">
+            <img src="https://res.cloudinary.com/dsml73vio/image/upload/v1720045585/citadel_inv/ikwk4o3e8jvk4cyhmmaq.png" alt="CITADEL INV">
+        </div>
+    
+        <!-- Content Section -->
+        <div class="content">
+            <h1>Withdrawal Request Confirmation</h1>
+            <p>Hello ${user.email},</p>
+            <p>We have received your withdrawal request of <strong>$${usd}</strong>.</p>
+            <p>Your request is currently under review by our team. Please note that this process may take up to 24 hours as the admin will verify your account before approving the transaction.</p>
+            <p>Once the withdrawal is approved, the funds will be transferred to your preferred destination as specified in your account settings.</p>
+            <p>If you have any questions or require assistance, feel free to contact our support team.</p>
+            <p>Thank you for choosing CITADEL INV.</p>
+            <p>Best regards,</p>
+            <p><strong>CITADEL INV Exchange Team</strong></p>
+        </div>
+
+        <!-- Footer Section -->
+        <div class="footer">
+            <p>This email was sent to ${user.email} regarding your withdrawal request.</p>
+            <p>If you didn't make this request, please contact us immediately.</p>
+        </div>
+    </body>
+    </html>`;
+}
+
+
+
         
 
 
@@ -1006,6 +1084,7 @@ module.exports= {loginNotificationMail,depositMail,userEmailTemplate,
     KycRejectMail,
     wakeUpMail,
     generateRenewalEmail,
-    generateEncourageEmail
+    generateEncourageEmail,
+    withdrawalRequestMail
     
 }

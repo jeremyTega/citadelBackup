@@ -143,6 +143,7 @@ const signUpUser = async (req, res) => {
 
         user.balance = 0;
         user.earnings = 0;
+        user.isVerified = true;
 
         await user.save();
 
@@ -168,7 +169,7 @@ const signUpUser = async (req, res) => {
         // }
        
 
-        res.status(200).json({ message: 'Signup successful, please check your email for OTP verification', data: user, token });
+        res.status(200).json({ message: 'Signup successful', data: user, token });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -886,6 +887,84 @@ const encourageUserMailFunction = async (req, res) => {
   }
  
 
+
+  
+// Function to update existing users with new fields
+const updateUsersWithNewFields = async (req, res) => {
+    try {
+      const result = await userModel.updateMany(
+        {
+          $or: [
+            { lastWithdraw: { $exists: false } },
+            { pendingWithdraw: { $exists: false } },
+            { rejectedWithdraw: { $exists: false } },
+            { lastIntrest: { $exists: false } },
+            { runningIntrest: { $exists: false } },
+            { completedIntrest: { $exists: false } },
+            { lastDeposit: { $exists: false } },
+            { PendingDeposit: { $exists: false } },
+            { RejectedDeposite: { $exists: false } }
+          ]
+        },
+        {
+          $set: {
+            lastWithdraw: 0,
+            pendingWithdraw: 0,
+            rejectedWithdraw: 0,
+            lastIntrest: 0,
+            runningIntrest: 0,
+            completedIntrest: 0,
+            lastDeposit: 0,
+            PendingDeposit: 0,
+            RejectedDeposite: 0
+          }
+        }
+      );
+  
+      res.status(200).json({
+        message: 'Users updated successfully',
+        updatedCount: result.nModified
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({
+        message: 'An error occurred while updating users',
+        error: err.message
+      });
+    }
+  };
+
+  const getPendingwithdrawl = async (req,res)=>{
+    try {
+        const {userId} = req.params
+        const user = await userModel.findOne({_id:userId})
+        if(!user){
+            return res.status(400).json({message:'user not found'})
+        }
+        const PendingWithdraw = user.pendingWithdraw
+        res.status(200).json({message:'user pending withdrawl', PendingWithdraw})
+        
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+}
+
+const RejectedWithdral = async (req,res)=>{
+    try {
+        const {userId} = req.params
+        const user = await userModel.findOne({_id:userId})
+        if(!user){
+            return res.status(400).json({message:'user not found'})
+        }
+        const rejectedWithdraw= user.rejectedWithdraw
+        res.status(200).json({message:'user pending withdrawl', rejectedWithdraw})
+        
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+}
+ 
+
 module.exports={
     signUpUser,
     verifyOtp,
@@ -905,7 +984,8 @@ module.exports={
     getUserTotalBalance,
     welcome,
     sendRenderMail,
-    encourageUserMailFunction
+    encourageUserMailFunction,
+    updateUsersWithNewFields
 }
 
 

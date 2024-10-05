@@ -323,6 +323,8 @@ const approveKyc = async (req, res) => {
 
 
 
+
+
 const rejectKyc = async (req, res) => {
     try {
         // const { adminId } = req.params;

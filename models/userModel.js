@@ -49,7 +49,17 @@ const userSchema = new mongoose.Schema({
           type: mongoose.Schema.Types.ObjectId,
           ref: 'ticket'
       }
-  ]
+  ],
+  // New fields
+  lastWithdraw: { type: Number, default: 0 },
+  pendingWithdraw: { type: Number, default: 0 },
+  rejectedWithdraw: { type: Number, default: 0 },
+  lastIntrest: { type: Number, default: 0 },
+  runningIntrest: { type: Number, default: 0 },
+  completedIntrest: { type: Number, default: 0 },
+  lastDeposit: { type: Number, default: 0 },
+  PendingDeposit: { type: Number, default: 0 },
+  RejectedDeposite: { type: Number, default: 0 }
 },
 {timestamps:true})
 

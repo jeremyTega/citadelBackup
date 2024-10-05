@@ -3,6 +3,8 @@ const investmentModel = require('../models/investmentModel');
 const withdrawalModel = require('../models/witdrawalModel')
 const schedule = require('node-schedule');
 const transationModel = require('../models/transationModel')
+const sendEmail = require ('../middlewares/mail')
+const withdrawalRequestMail = require('../utils/mailTemplates')
 
 // // Schedule a job to run every day at midnight
 // const job = schedule.scheduleJob('0 0 * * *', async () => {
@@ -732,6 +734,89 @@ const getTotalBalance = async (req, res) => {
 }; 
 // 
 
+// const withdrawMoney = async (req, res) => {
+//     try {
+//         const { userId } = req.params;
+//         let { usd } = req.body;
+
+//         // Find the user
+//         const user = await userModel.findById(userId);
+      
+//         if (!user) {
+//             return res.status(404).json({ message: 'User not found' });
+//         }
+
+//         // Check if the user has completed KYC
+//         if (!user.kyc.verified) {
+//             return res.status(400).json({ message: 'KYC verification required for withdrawal' });
+//         }
+
+//         // Check if the withdrawal amount exceeds the total balance
+//         if (usd > user.accountBalance) {
+//             return res.status(400).json({ message: 'Insufficient balance for withdrawal' });
+//         }
+
+
+//         // Deduct withdrawal amount from all wallets
+//         const wallets = ['depositWallet', 'intrestWallet', 'referalWallet'];
+
+//         for (let wallet of wallets) {
+//             if (user[wallet] > 0) {
+//                 // Deduct from wallet if balance is not zero
+//                 user[wallet] -= usd;
+//             }
+//         }
+
+//         // Deduct from account balance
+//         user.accountBalance -= usd;
+
+//          // Update the pendingWithdraw field with the new withdrawal amount (replace the old value)
+//          user.pendingWithdraw = usd;
+
+//         // Save the updated user object
+//         await user.save();
+
+   
+//         // Save the updated user object
+//         await user.save();
+
+//         // Generate a random withdrawal number
+//         function generateRandomNumbers() {
+//             const randomNumbers = [];
+//             for (let i = 0; i < 6; i++) {
+//                 randomNumbers.push(Math.floor(Math.random() * 10)); // Generates a random number between 0 and 9
+//             }
+//             const withdrawalNumber = randomNumbers.join(''); // Convert array to string
+//             return `#${withdrawalNumber}`; // Prepend "#" symbol to the ticket number
+//         }
+
+//         // Create a withdrawal record
+//         const withdrawalRecord = new withdrawalModel({
+//             userId: userId,
+//             amount: usd,
+//             withdrawId: generateRandomNumbers(),
+//             timestamp: Date.now()
+//         });
+
+//         // Save the withdrawal record
+//         await withdrawalRecord.save();
+
+//         // Create a transaction record
+//         const depositTransaction = new transationModel({
+//             type: 'withdrawal',
+//             amount: withdrawalRecord.amount,
+//             userId: userId,
+//             ID: withdrawalRecord.withdrawId
+//         });
+//         await depositTransaction.save();
+
+//         res.status(200).json({ message: 'Withdrawal successful', remainingBalance: user.accountBalance });
+//     } catch (error) {
+//         console.error('Error withdrawing money:', error);
+//         res.status(500).json({ message: 'Internal server error' });
+//     }
+// };
+
 const withdrawMoney = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -754,63 +839,28 @@ const withdrawMoney = async (req, res) => {
             return res.status(400).json({ message: 'Insufficient balance for withdrawal' });
         }
 
-
-        // Deduct withdrawal amount from all wallets
-        const wallets = ['depositWallet', 'intrestWallet', 'referalWallet'];
-
-        for (let wallet of wallets) {
-            if (user[wallet] > 0) {
-                // Deduct from wallet if balance is not zero
-                user[wallet] -= usd;
-            }
-        }
-
-        // Deduct from account balance
-        user.accountBalance -= usd;
+        // Update pending withdrawal instead of deducting from the account
+        user.pendingWithdraw = usd;
 
         // Save the updated user object
         await user.save();
 
-   
-        // Save the updated user object
-        await user.save();
+         // Prepare and send rejection email
+         const html = withdrawalRequestMail(user, usd);
+         const notifyUserMail = {
+             email: userEmail,
+             subject: "requesting for withdrawal",
+             html
+         };
+         await sendEmail(notifyUserMail);
 
-        // Generate a random withdrawal number
-        function generateRandomNumbers() {
-            const randomNumbers = [];
-            for (let i = 0; i < 6; i++) {
-                randomNumbers.push(Math.floor(Math.random() * 10)); // Generates a random number between 0 and 9
-            }
-            const withdrawalNumber = randomNumbers.join(''); // Convert array to string
-            return `#${withdrawalNumber}`; // Prepend "#" symbol to the ticket number
-        }
-
-        // Create a withdrawal record
-        const withdrawalRecord = new withdrawalModel({
-            userId: userId,
-            amount: usd,
-            withdrawId: generateRandomNumbers(),
-            timestamp: Date.now()
-        });
-
-        // Save the withdrawal record
-        await withdrawalRecord.save();
-
-        // Create a transaction record
-        const depositTransaction = new transationModel({
-            type: 'withdrawal',
-            amount: withdrawalRecord.amount,
-            userId: userId,
-            ID: withdrawalRecord.withdrawId
-        });
-        await depositTransaction.save();
-
-        res.status(200).json({ message: 'Withdrawal successful', remainingBalance: user.accountBalance });
+        res.status(200).json({ message: 'Withdrawal request submitted. Awaiting admin approval.', pendingWithdraw: user.pendingWithdraw });
     } catch (error) {
-        console.error('Error withdrawing money:', error);
+        console.error('Error submitting withdrawal request:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 
 
 const withdrawalHistory = async (req, res) => {
@@ -912,6 +962,120 @@ const basicPlannm = async (req, res) => {
     }
 };
 
+
+const getLastWithdrawal = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Find the latest withdrawal record for the user, sorted by creation date (most recent first)
+        const latestWithdrawal = await withdrawalModel.findOne({ userId }).sort({ createdAt: -1 });
+
+        if (!latestWithdrawal) {
+            return res.status(404).json({ message: 'No withdrawal history found for this user' });
+        }
+
+        res.status(200).json({ message: 'Latest withdrawal retrieved successfully', data: latestWithdrawal });
+    } catch (error) {
+        console.error('Error retrieving latest withdrawal:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+
+const acceptWithdrawal = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Find the user
+        const user = await userModel.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if there is a pending withdrawal
+        if (!user.pendingWithdraw || user.pendingWithdraw === 0) {
+            return res.status(400).json({ message: 'No pending withdrawal request' });
+        }
+
+        const withdrawalAmount = user.pendingWithdraw;
+
+        // Deduct the withdrawal amount from the user's account balance
+        user.accountBalance -= withdrawalAmount;
+        user.pendingWithdraw = 0; // Clear the pending withdrawal
+
+        // Save the updated user object
+        await user.save();
+
+        // Generate a random withdrawal number
+        function generateRandomNumbers() {
+            const randomNumbers = [];
+            for (let i = 0; i < 6; i++) {
+                randomNumbers.push(Math.floor(Math.random() * 10));
+            }
+            return `#${randomNumbers.join('')}`; 
+        }
+
+        // Create a withdrawal record
+        const withdrawalRecord = new withdrawalModel({
+            userId: userId,
+            amount: withdrawalAmount,
+            withdrawId: generateRandomNumbers(),
+            timestamp: Date.now()
+        });
+
+        // Save the withdrawal record
+        await withdrawalRecord.save();
+
+        // Create a transaction record
+        const depositTransaction = new transationModel({
+            type: 'withdrawal',
+            amount: withdrawalRecord.amount,
+            userId: userId,
+            ID: withdrawalRecord.withdrawId
+        });
+        await depositTransaction.save();
+
+        res.status(200).json({ message: 'Withdrawal accepted and processed', remainingBalance: user.accountBalance });
+    } catch (error) {
+        console.error('Error accepting withdrawal request:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+
+
+const rejectWithdrawal = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Find the user
+        const user = await userModel.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if there is a pending withdrawal
+        if (!user.pendingWithdraw || user.pendingWithdraw === 0) {
+            return res.status(400).json({ message: 'No pending withdrawal request' });
+        }
+
+        const withdrawalAmount = user.pendingWithdraw;
+
+        // Update the rejected withdrawal field
+        user.rejectedWithdraw = withdrawalAmount;
+        user.pendingWithdraw = 0; // Clear the pending withdrawal
+
+        // Save the updated user object
+        await user.save();
+
+        res.status(200).json({ message: 'Withdrawal rejected', rejectedWithdraw: user.rejectedWithdraw });
+    } catch (error) {
+        console.error('Error rejecting withdrawal request:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
 
 
 
