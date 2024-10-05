@@ -1118,7 +1118,8 @@ module.exports = {
     getTotalWithdraw,
     acceptWithdrawal,
     rejectWithdrawal,
-    getTotalWithdrawals
+    getTotalWithdrawals,
+    getLastWithdrawal
     
 };
 
