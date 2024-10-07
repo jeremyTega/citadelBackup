@@ -949,7 +949,7 @@ const updateUsersWithNewFields = async (req, res) => {
     }
 }
 
-const RejectedWithdral = async (req,res)=>{
+const getRejectedWithdral = async (req,res)=>{
     try {
         const {userId} = req.params
         const user = await userModel.findOne({_id:userId})
@@ -987,7 +987,7 @@ module.exports={
     encourageUserMailFunction,
     updateUsersWithNewFields,
     getPendingwithdrawl,
-    RejectedWithdral
+    getRejectedWithdral
 }
 
 

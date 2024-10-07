@@ -4,7 +4,7 @@ const upload = require('../helpers/multer')
 const {welcome,signUpUser,verifyOtp,resendVerificationOtp,login,ViewProfile,assignMoneyToUser,assignProfitToUser, 
     deleteUser,deactivateUser,updateUser,logout,getUserDepositWallet,getuserReferalWallet,getuserIntrestWallet,
     getAllUsers,getUserTotalBalance,sendRenderMail,encourageUserMailFunction,updateUsersWithNewFields,getPendingwithdrawl,
-    RejectedWithdral} = require('../controllers/usercontroller')
+    getRejectedWithdral} = require('../controllers/usercontroller')
 const {resetPassword,changePassword,forgotPassword} = require ('../controllers/passwordController')
 const {authenticateUser,Role} = require('../middlewares/authorisation')
 const {getTransactionHistory,getLatestTransaction} = require('../controllers/transation')
@@ -20,7 +20,7 @@ router.route("/getUserDepositWallet/:userId").get(getUserDepositWallet)
 router.route("/getuserReferalWallet/:userId").get(getuserReferalWallet)
 router.route("/getuserIntrestWallet/:userId").get(getuserIntrestWallet)
 router.route("/getPendingwithdrawl/:userId").get(getPendingwithdrawl)
-router.route("/RejectedWithdral/:userId").get(RejectedWithdral)
+router.route("/RejectedWithdral/:userId").get(getRejectedWithdral)
 router.route("/verifyOtp/:token").post(verifyOtp)
 router.route("/resendVerificationOtp").post(resendVerificationOtp)
 router.route("/login").post(login)

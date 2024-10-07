@@ -4,7 +4,9 @@ const withdrawalModel = require('../models/witdrawalModel')
 const schedule = require('node-schedule');
 const transationModel = require('../models/transationModel')
 const sendEmail = require ('../middlewares/mail')
-const {withdrawalRequestMail} = require('../utils/mailTemplates')
+const mongoose = require('mongoose')
+require('dotenv').config();
+const {withdrawalRequestMail,withdrawalRejectedMail,withdrawalAcceptedMail,adminWithdrawalRequestMail} = require('../utils/mailTemplates')
 
 // // Schedule a job to run every day at midnight
 // const job = schedule.scheduleJob('0 0 * * *', async () => {
@@ -822,6 +824,14 @@ const withdrawMoney = async (req, res) => {
         const { userId } = req.params;
         let { usd } = req.body;
 
+          // Convert usd to a number to avoid string concatenation
+          usd = Number(usd);
+
+          // Check if usd is a valid number
+          if (isNaN(usd) || usd <= 0) {
+              return res.status(400).json({ message: 'Invalid withdrawal amount' });
+          }
+
         // Find the user
         const user = await userModel.findById(userId);
       
@@ -839,8 +849,8 @@ const withdrawMoney = async (req, res) => {
             return res.status(400).json({ message: 'Insufficient balance for withdrawal' });
         }
 
-        // Update pending withdrawal instead of deducting from the account
-        user.pendingWithdraw = usd;
+           // Add the new withdrawal amount to the existing pending withdrawal
+           user.pendingWithdraw = (user.pendingWithdraw || 0) + usd;
 
         // Save the updated user object
         await user.save();
@@ -853,6 +863,15 @@ const withdrawMoney = async (req, res) => {
              html
          };
          await sendEmail(notifyUserMail);
+
+            // Prepare and send admin email
+        const adminHtml = adminWithdrawalRequestMail(user, usd);
+        const notifyAdminMail = {
+            email:process.env.AdminMail, // Replace with actual admin email
+            subject: "New Withdrawal Request",
+            html: adminHtml
+        };
+        await sendEmail(notifyAdminMail);
 
         res.status(200).json({ message: 'Withdrawal request submitted. Awaiting admin approval.', pendingWithdraw: user.pendingWithdraw });
     } catch (error) {
@@ -870,9 +889,9 @@ const withdrawalHistory = async (req, res) => {
         // Find withdrawal records associated with the specified user ID
         const withdrawals = await withdrawalModel.find({ userId }).sort({ timestamp: -1 });
 
-        if (!withdrawals) {
-            return res.status(404).json({ message: 'Withdrawal history not found for this user' });
-        }
+        // if (!withdrawals) {
+        //     return res.status(404).json({ message: 'Withdrawal history not found for this user' });
+        // }
 
         res.status(200).json({ message: 'Withdrawal history retrieved successfully', data: withdrawals });
     } catch (error) {
@@ -974,7 +993,8 @@ const getLastWithdrawal = async (req, res) => {
             return res.status(404).json({ message: 'No withdrawal history found for this user' });
         }
 
-        res.status(200).json({ message: 'Latest withdrawal retrieved successfully', data: latestWithdrawal });
+        // Return only the amount
+        res.status(200).json({ message: 'Latest withdrawal amount retrieved successfully', amount: latestWithdrawal.amount });
     } catch (error) {
         console.error('Error retrieving latest withdrawal:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -984,10 +1004,15 @@ const getLastWithdrawal = async (req, res) => {
 
 const acceptWithdrawal = async (req, res) => {
     try {
-        const { userId } = req.params;
+        const { userId } = req.body;
+
+      // Check if userId is a valid ObjectId
+      if (!mongoose.isValidObjectId(userId)) {
+          return res.status(400).json({ message: 'Invalid user ID, please pass the correct user ID' });
+      }
 
         // Find the user
-        const user = await userModel.findById(userId);
+        const user = await userModel.findOne({ _id: userId })
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -1036,6 +1061,17 @@ const acceptWithdrawal = async (req, res) => {
         });
         await depositTransaction.save();
 
+        const usd = withdrawalRecord.amount
+        
+         // Prepare and send rejection email
+         const html = withdrawalAcceptedMail(user, usd);
+         const notifyUserMail = {
+             email: user.email,
+             subject: "Accept withdrawal",
+             html
+         };
+         await sendEmail(notifyUserMail);
+
         res.status(200).json({ message: 'Withdrawal accepted and processed', remainingBalance: user.accountBalance });
     } catch (error) {
         console.error('Error accepting withdrawal request:', error);
@@ -1044,13 +1080,17 @@ const acceptWithdrawal = async (req, res) => {
 };
 
 
-
 const rejectWithdrawal = async (req, res) => {
     try {
-        const { userId } = req.params;
+        const { userId } = req.body;
+
+        // Check if userId is a valid ObjectId
+        if (!mongoose.isValidObjectId(userId)) {
+            return res.status(400).json({ message: 'Invalid user ID, please pass the correct user ID' });
+        }
 
         // Find the user
-        const user = await userModel.findById(userId);
+        const user = await userModel.findOne({ _id: userId });
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -1070,12 +1110,22 @@ const rejectWithdrawal = async (req, res) => {
         // Save the updated user object
         await user.save();
 
+        // Prepare and send rejection email
+        const html = withdrawalRejectedMail(user, withdrawalAmount);  // Pass the withdrawal amount here
+        const notifyUserMail = {
+            email: user.email,
+            subject: "Withdrawal Request Rejected",
+            html
+        };
+        await sendEmail(notifyUserMail);
+
         res.status(200).json({ message: 'Withdrawal rejected', rejectedWithdraw: user.rejectedWithdraw });
     } catch (error) {
         console.error('Error rejecting withdrawal request:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 
 
 const getTotalWithdrawals = async (req, res) => {
