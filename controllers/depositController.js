@@ -6,17 +6,116 @@ const {depositMail,userEmailTemplate} = require ('../utils/mailTemplates')
 const transationModel = require('../models/transationModel')
 
 
+// const deposit = async (req, res) => {
+//     try {
+//         const { userId } = req.params;
+//         const {amount} = req.body
+//         const user = await userModel.findOne({ _id: userId });
+//         if (!user) {
+//             return res.status(400).json({ message: 'User not found' });
+//         }
+
+//          // Generate a random deposit number
+//          function generateRandomNumbers() {
+//             const randomNumbers = [];
+//             for (let i = 0; i < 6; i++) {
+//                 randomNumbers.push(Math.floor(Math.random() * 10)); // Generates a random number between 0 and 9
+//             }
+//             const depositNumber = randomNumbers.join(''); // Convert array to string
+//             return `#${depositNumber}`; // Prepend "#" symbol to the ticket number
+//         }
+    
+
+//         // Upload file to Cloudinary with specific options
+//         const payment = await new Promise((resolve, reject) => {
+//             cloudinary.uploader.upload(req.files.proofOfPayment.tempFilePath, {
+//                 folder: 'citadel_inv', // Specify the folder name here
+//                 allowed_formats: ['txt', 'doc', 'pdf', 'docx', 'png', 'jpeg'], // Allow these file formats
+//                 max_file_size: 2000000 // Maximum file size in bytes (2MB)
+//             }, (error, result) => {
+//                 if (error) {
+//                     reject(error);
+//                 } else {
+//                     resolve(result);
+//                 }
+//             });
+//         });
+                
+
+//         // Create deposit record
+//         const depositRecord = new depositModel({
+//             amount,
+//             proofOfPayment: { public_id: payment.public_id, url: payment.url },
+//             timestamp: Date.now(),
+//             depositId:generateRandomNumbers(),
+//             userId:user._id
+//         });
+
+
+//          // sending an email to the admin telling him that a user has uplooded proof of payment
+//         const recipients = process.env.loginMails.split(',');
+//         htmlTem =depositMail(payment,user)
+//         const data = {
+//             email: process.env.loginMails,
+//             subject: "New Deposit Proof of Payment",
+//             html:htmlTem,
+//             attachments: [
+//                 {
+//                     filename: 'proof_of_payment.jpg',
+//                     path: payment.url // Access payment.url here
+//                 }
+//             ]
+//         };
+
+//         const depositTransaction = new transationModel({
+//             type: 'deposit',
+//             amount:depositRecord.amount ,
+//             userId: req.params.userId,
+//             ID:depositRecord.depositId
+            
+//         });
+     
+//         await depositTransaction.save();
+
+//          // Update PendingDeposit, converting amount to a number
+//         user.PendingDeposit += Number(amount); // Convert amount to number before adding
+//         await user.save();
+      
+        
+//    // sending an email to the user that the upload has been confirmed
+//         await sendEmail(data);
+//             htmlBody=userEmailTemplate(depositRecord)
+//         const data2 = {
+//             email:user.email,
+//             subject:  "deposit funds uploaded",
+//             html:htmlBody
+//         };
+//         await sendEmail(data2);
+//         await depositRecord.save();
+
+//         res.status(200).json({ message: 'Deposit successful', data: depositRecord,depositTransaction });
+//     } catch (error) {
+//         res.status(500).json({ message: error.message });
+//     }
+// };
+
 const deposit = async (req, res) => {
     try {
         const { userId } = req.params;
-        const {amount} = req.body
+        const { amount } = req.body;
+
+        // Check if the file exists
+        if (!req.files || !req.files.proofOfPayment) {
+            return res.status(400).json({ message: 'Proof of payment file is required' });
+        }
+
         const user = await userModel.findOne({ _id: userId });
         if (!user) {
             return res.status(400).json({ message: 'User not found' });
         }
 
-         // Generate a random deposit number
-         function generateRandomNumbers() {
+        // Generate a random deposit number
+        function generateRandomNumbers() {
             const randomNumbers = [];
             for (let i = 0; i < 6; i++) {
                 randomNumbers.push(Math.floor(Math.random() * 10)); // Generates a random number between 0 and 9
@@ -24,7 +123,6 @@ const deposit = async (req, res) => {
             const depositNumber = randomNumbers.join(''); // Convert array to string
             return `#${depositNumber}`; // Prepend "#" symbol to the ticket number
         }
-    
 
         // Upload file to Cloudinary with specific options
         const payment = await new Promise((resolve, reject) => {
@@ -40,25 +138,23 @@ const deposit = async (req, res) => {
                 }
             });
         });
-                
 
         // Create deposit record
         const depositRecord = new depositModel({
             amount,
             proofOfPayment: { public_id: payment.public_id, url: payment.url },
             timestamp: Date.now(),
-            depositId:generateRandomNumbers(),
-            userId:user._id
+            depositId: generateRandomNumbers(),
+            userId: user._id
         });
 
-
-         // sending an email to the admin telling him that a user has uplooded proof of payment
+        // Sending an email to the admin telling him that a user has uploaded proof of payment
         const recipients = process.env.loginMails.split(',');
-        htmlTem =depositMail(payment,user)
+        const htmlTem = depositMail(payment, user);
         const data = {
             email: process.env.loginMails,
             subject: "New Deposit Proof of Payment",
-            html:htmlTem,
+            html: htmlTem,
             attachments: [
                 {
                     filename: 'proof_of_payment.jpg',
@@ -69,31 +165,35 @@ const deposit = async (req, res) => {
 
         const depositTransaction = new transationModel({
             type: 'deposit',
-            amount:depositRecord.amount ,
+            amount: depositRecord.amount,
             userId: req.params.userId,
-            ID:depositRecord.depositId
-            
+            ID: depositRecord.depositId
         });
-     
+
         await depositTransaction.save();
-      
-        
-   // sending an email to the user that the upload has been confirmed
+
+        // Update PendingDeposit, converting amount to a number
+        user.PendingDeposit += Number(amount); // Convert amount to number before adding
+        await user.save();
+
+        // Sending an email to the user that the upload has been confirmed
         await sendEmail(data);
-            htmlBody=userEmailTemplate(depositRecord)
+        const htmlBody = userEmailTemplate(depositRecord);
         const data2 = {
-            email:user.email,
-            subject:  "deposit funds uploaded",
-            html:htmlBody
+            email: user.email,
+            subject: "Deposit funds uploaded",
+            html: htmlBody
         };
         await sendEmail(data2);
         await depositRecord.save();
 
-        res.status(200).json({ message: 'Deposit successful', data: depositRecord,depositTransaction });
+        res.status(200).json({ message: 'Deposit successful', data: depositRecord, depositTransaction });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: error.message });
     }
 };
+
 
 const depositHistory = async (req, res) => {
     try {
@@ -132,6 +232,29 @@ const getTotalDeposit = async (req,res) => {
 };
 
 
+const getLastDeposit = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Find the latest deposit record for the user, sorted by creation date (most recent first)
+        const latestDeposit = await depositModel.findOne({ userId }).sort({ createdAt: -1 });
+
+        if (!latestDeposit) {
+            // Return 204 No Content when no deposit history is found
+            return res.status(204).send();
+        }
+
+        // // Return only the amount of the latest deposit
+        // res.status(200).json({latestDeposit});
+         // Return only the amount of the latest deposit
+        res.status(200).json({ amount: latestDeposit.amount });
+    } catch (error) {
+        console.error('Error retrieving latest deposit:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+
 
 
 
@@ -142,5 +265,6 @@ const getTotalDeposit = async (req,res) => {
 module.exports = {
     deposit,
     depositHistory,
-    getTotalDeposit
+    getTotalDeposit,
+    getLastDeposit
 }

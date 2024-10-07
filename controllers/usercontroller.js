@@ -492,6 +492,54 @@ const ViewProfile = async (req,res)=>{
 // };
 
 
+// const assignMoneyToUser = async (req, res) => {
+//     try {
+//         const { userId, amount } = req.body;
+
+//         // Remove spaces from the inputs
+//         const cleanedUserId = userId.replace(/\s/g, '');
+//         const cleanedAmount = amount.toString().replace(/\s/g, '');
+
+//         // Check if userId is a valid ObjectId
+//         if (!mongoose.isValidObjectId(cleanedUserId)) {
+//             return res.status(400).json({ message: 'Invalid user ID, please pass the correct user ID' });
+//         }
+
+//         // Find the user
+//         const user = await userModel.findById(cleanedUserId);
+//         if (!user) {
+//             return res.status(400).json({ message: 'Invalid user ID' });
+//         }
+
+//         // Validate the amount
+//         if (isNaN(cleanedAmount)) {
+//             return res.status(400).json({ message: 'Invalid amount' });
+//         }
+
+//         // Validate the amount
+//         if (!cleanedAmount || parseFloat(cleanedAmount) === 0) {
+//             return res.status(400).json({ message: 'Amount must be provided and greater than 0' });
+//         }
+
+//         // Assign money to user
+//         user.depositWallet += parseFloat(cleanedAmount);
+//         user.accountBalance += parseFloat(cleanedAmount);
+//         await user.save();
+
+//         const html = moneyDepositNotificationMail(user, cleanedAmount);
+//         const emailData = {
+//             subject: "Money Deposit Notification",
+//             html
+//         };
+
+//         // Send email notification to user
+//         await sendEmail({ email: user.email, ...emailData });
+//         res.status(200).json({ message: 'Money assigned to user successfully', user });
+//     } catch (error) {
+//         console.error('Error assigning money to user:', error);
+//         res.status(500).json({ message: 'Internal server error' });
+//     }
+// };
 const assignMoneyToUser = async (req, res) => {
     try {
         const { userId, amount } = req.body;
@@ -521,9 +569,22 @@ const assignMoneyToUser = async (req, res) => {
             return res.status(400).json({ message: 'Amount must be provided and greater than 0' });
         }
 
+        // Convert cleanedAmount to a number
+        const amountToAssign = parseFloat(cleanedAmount);
+
+        // // Check if the PendingDeposit is sufficient
+        // if (user.PendingDeposit < amountToAssign) {
+        //     return res.status(400).json({ message: 'Insufficient pending deposit amount' });
+        // }
+
         // Assign money to user
-        user.depositWallet += parseFloat(cleanedAmount);
-        user.accountBalance += parseFloat(cleanedAmount);
+        user.depositWallet += amountToAssign;
+        user.accountBalance += amountToAssign;
+
+       // Deduct the assigned amount from PendingDeposit, ensuring it doesn't go negative
+       if (user.PendingDeposit > 0) {
+        user.PendingDeposit = Math.max(0, user.PendingDeposit - amountToAssign);
+    }
         await user.save();
 
         const html = moneyDepositNotificationMail(user, cleanedAmount);
@@ -541,53 +602,6 @@ const assignMoneyToUser = async (req, res) => {
     }
 };
 
-
-// const assignProfitToUser = async (req, res) => {
-//     try {
-//         // const { adminId } = req.params;
-//         const { userId, profit } = req.body;
-
-//         // Find the admin
-//         // const admin = await userModel.findById(adminId);
-//         // if (!admin || !admin.isAdmin) {
-//         //     return res.status(400).json({ message: 'user is not an admin , cannot perform function' });
-//         // }
-
-//           // Check if userId is a valid ObjectId
-//           if (!mongoose.isValidObjectId(userId)) {
-//             return res.status(400).json({ message: 'Invalid user ID, please pass the correct user ID' });
-//         }
-
-    
-//         // Find the user
-//         const user = await userModel.findById(userId);
-//         if (!user) {
-//             return res.status(400).json({ message: 'Invalid user ID' });
-//         }
-
-//         // Validate the profit
-//         if (isNaN(profit) ) {
-//             return res.status(400).json({ message: 'Invalid amount' });
-//         }
-        
-
-//          // Validate the profit
-//          if (!profit || parseFloat(profit) === 0) {
-//             return res.status(400).json({ message: 'Amount must be provided and greater than 0' });
-//         }
-
-//         // Assign money to user
-//         user.intrestWallet += parseFloat(profit);
-//         user.accountBalance+= parseFloat(profit);
-        
-//         await user.save();
-
-//         res.status(200).json({ message: 'profits assigned to user successfully', user });
-//     } catch (error) {
-//         console.error('Error assigning money to user:', error);
-//         res.status(500).json({ message: 'Internal server error' });
-//     }
-// };
 
 const assignProfitToUser = async (req, res) => {
     try {
@@ -963,6 +977,21 @@ const getRejectedWithdral = async (req,res)=>{
         res.status(500).json(error.message)
     }
 }
+
+const getPendingDeposit = async (req,res)=>{
+    try {
+        const {userId} = req.params
+        const user = await userModel.findOne({_id:userId})
+        if(!user){
+            return res.status(400).json({message:'user not found'})
+        }
+        const pendingDeposit= user.PendingDeposit
+        res.status(200).json({message:'user pending deposit', pendingDeposit})
+        
+    } catch (error) {
+        res.status(500).json(error.message)
+    }
+}
  
 
 module.exports={
@@ -987,7 +1016,8 @@ module.exports={
     encourageUserMailFunction,
     updateUsersWithNewFields,
     getPendingwithdrawl,
-    getRejectedWithdral
+    getRejectedWithdral,
+    getPendingDeposit
 }
 
 

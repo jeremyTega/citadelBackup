@@ -1173,6 +1173,62 @@ const getTotalWithdrawals = async (req, res) => {
 };
 
 
+const getLastInvestment = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Find the latest investment record for the user, sorted by creation date (most recent first)
+        const latestInvestment = await investmentModel.findOne({ userId }).sort({ createdAt: -1 });
+
+        if (!latestInvestment) {
+            return res.status(404).json({ message: 'No investment history found for this user' });
+        }
+
+        res.status(200).json({ message: 'Latest investment retrieved successfully', amount: latestInvestment.amount });
+    } catch (error) {
+        console.error('Error retrieving latest investment:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+const getRunningInvestment = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Find the running investment records for the user and sum up the amounts
+        const runningInvestments = await investmentModel.find({ userId, ongoing: true });
+        const totalRunningAmount = runningInvestments.reduce((acc, investment) => acc + investment.amount, 0);
+
+        if (totalRunningAmount === 0) {
+            return res.status(404).json({ message: 'No running investment found for this user' });
+        }
+
+        res.status(200).json({ message: 'Running investment retrieved successfully', amount: totalRunningAmount });
+    } catch (error) {
+        console.error('Error retrieving running investment:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+const getCompletedInvestment = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Find the completed investment records for the user and sum up the amounts
+        const completedInvestments = await investmentModel.find({ userId, ongoing: false });
+        const totalCompletedAmount = completedInvestments.reduce((acc, investment) => acc + investment.amount, 0);
+
+        if (totalCompletedAmount === 0) {
+            return res.status(404).json({ message: 'No completed investment found for this user' });
+        }
+
+        res.status(200).json({ message: 'Completed investment retrieved successfully', amount: totalCompletedAmount });
+    } catch (error) {
+        console.error('Error retrieving completed investment:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
 module.exports = {
     basicPlan,
     proPlan,
@@ -1190,7 +1246,10 @@ module.exports = {
     acceptWithdrawal,
     rejectWithdrawal,
     getTotalWithdrawals,
-    getLastWithdrawal
+    getLastWithdrawal,
+    getLastInvestment,
+    getRunningInvestment,
+    getCompletedInvestment
     
 };
 
