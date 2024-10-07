@@ -1229,6 +1229,27 @@ const getCompletedInvestment = async (req, res) => {
     }
 };
 
+
+const getWithdrawalRequests = async (req, res) => {
+    try {
+        // Find all users with a pending withdrawal amount greater than 0
+        const usersWithPendingWithdrawals = await userModel.find({
+            pendingWithdraw: { $gt: 0 } // Greater than 0
+        });
+
+        // Check if there are any users with pending withdrawals
+        if (usersWithPendingWithdrawals.length === 0) {
+            return res.status(404).json({ message: 'No pending withdrawal requests found' });
+        }
+
+        // Return the list of users with pending withdrawals
+        res.status(200).json({ message: 'Pending withdrawal requests retrieved successfully', users: usersWithPendingWithdrawals });
+    } catch (error) {
+        console.error('Error retrieving withdrawal requests:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
 module.exports = {
     basicPlan,
     proPlan,
@@ -1249,7 +1270,8 @@ module.exports = {
     getLastWithdrawal,
     getLastInvestment,
     getRunningInvestment,
-    getCompletedInvestment
+    getCompletedInvestment,
+    getWithdrawalRequests
     
 };
 
