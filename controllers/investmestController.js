@@ -725,7 +725,7 @@ const getTotalBalance = async (req, res) => {
         }
 
         // Sum up the user's balance
-        let totalBalance = user.balance;
+        let totalBalance = user.accountBalance;
 
         // You can add additional logic here if the user's balance is stored across multiple accounts or documents
 
