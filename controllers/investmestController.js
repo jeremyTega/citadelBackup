@@ -1180,11 +1180,10 @@ const getLastInvestment = async (req, res) => {
         // Find the latest investment record for the user, sorted by creation date (most recent first)
         const latestInvestment = await investmentModel.findOne({ userId }).sort({ createdAt: -1 });
 
-        if (!latestInvestment) {
-            return res.status(404).json({ message: 'No investment history found for this user' });
-        }
+        // If no investment is found, return 0 as the amount
+        const amount = latestInvestment ? latestInvestment.amount : 0;
 
-        res.status(200).json({ message: 'Latest investment retrieved successfully', amount: latestInvestment.amount });
+        res.status(200).json({ message: 'Latest investment retrieved successfully', amount });
     } catch (error) {
         console.error('Error retrieving latest investment:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -1199,10 +1198,7 @@ const getRunningInvestment = async (req, res) => {
         const runningInvestments = await investmentModel.find({ userId, ongoing: true });
         const totalRunningAmount = runningInvestments.reduce((acc, investment) => acc + investment.amount, 0);
 
-        if (totalRunningAmount === 0) {
-            return res.status(404).json({ message: 'No running investment found for this user' });
-        }
-
+        // Return 0 as the amount if no running investments are found
         res.status(200).json({ message: 'Running investment retrieved successfully', amount: totalRunningAmount });
     } catch (error) {
         console.error('Error retrieving running investment:', error);
@@ -1218,10 +1214,7 @@ const getCompletedInvestment = async (req, res) => {
         const completedInvestments = await investmentModel.find({ userId, ongoing: false });
         const totalCompletedAmount = completedInvestments.reduce((acc, investment) => acc + investment.amount, 0);
 
-        if (totalCompletedAmount === 0) {
-            return res.status(404).json({ message: 'No completed investment found for this user' });
-        }
-
+        // Return 0 as the amount if no completed investments are found
         res.status(200).json({ message: 'Completed investment retrieved successfully', amount: totalCompletedAmount });
     } catch (error) {
         console.error('Error retrieving completed investment:', error);
