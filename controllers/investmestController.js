@@ -1002,6 +1002,27 @@ const basicPlannm = async (req, res) => {
 // };
 
 
+// const getLastWithdrawal = async (req, res) => {
+//     try {
+//         const { userId } = req.params;
+
+//         // Find the latest withdrawal record for the user, sorted by creation date (most recent first)
+//         const latestWithdrawal = await withdrawalModel.findOne({ userId }).sort({ createdAt: -1 });
+
+//         if (!latestWithdrawal) {
+//             // Return without any message or status when there's no withdrawal history
+//             return res.status(204).send(); // 204 No Content
+//         }
+
+//         // Return only the amount, without any message
+//         res.status(200).json({ amount: latestWithdrawal.amount });
+//     } catch (error) {
+//         console.error('Error retrieving latest withdrawal:', error);
+//         res.status(500).json({ message: 'Internal server error' });
+//     }
+// };
+
+
 const getLastWithdrawal = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -1009,19 +1030,16 @@ const getLastWithdrawal = async (req, res) => {
         // Find the latest withdrawal record for the user, sorted by creation date (most recent first)
         const latestWithdrawal = await withdrawalModel.findOne({ userId }).sort({ createdAt: -1 });
 
-        if (!latestWithdrawal) {
-            // Return without any message or status when there's no withdrawal history
-            return res.status(204).send(); // 204 No Content
-        }
+        // If no withdrawal is found, return 0 as the amount
+        const amount = latestWithdrawal ? latestWithdrawal.amount : 0;
 
-        // Return only the amount, without any message
-        res.status(200).json({ amount: latestWithdrawal.amount });
+        // Return the amount (0 if no withdrawal was found)
+        res.status(200).json({ amount });
     } catch (error) {
         console.error('Error retrieving latest withdrawal:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
-
 
 const acceptWithdrawal = async (req, res) => {
     try {

@@ -239,20 +239,17 @@ const getLastDeposit = async (req, res) => {
         // Find the latest deposit record for the user, sorted by creation date (most recent first)
         const latestDeposit = await depositModel.findOne({ userId }).sort({ createdAt: -1 });
 
-        if (!latestDeposit) {
-            // Return 204 No Content when no deposit history is found
-            return res.status(204).send();
-        }
+        // If no deposit is found, return 0 as the amount
+        const amount = latestDeposit ? latestDeposit.amount : 0;
 
-        // // Return only the amount of the latest deposit
-        // res.status(200).json({latestDeposit});
-         // Return only the amount of the latest deposit
-        res.status(200).json({ amount: latestDeposit.amount });
+        // Return the amount (0 if no deposit was found)
+        res.status(200).json({ amount });
     } catch (error) {
         console.error('Error retrieving latest deposit:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 
 
 
