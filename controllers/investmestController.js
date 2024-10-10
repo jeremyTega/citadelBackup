@@ -864,14 +864,17 @@ const withdrawMoney = async (req, res) => {
          };
          await sendEmail(notifyUserMail);
 
-            // Prepare and send admin email
-        const adminHtml = adminWithdrawalRequestMail(user, usd);
-        const notifyAdminMail = {
-            email:process.env.AdminMail, // Replace with actual admin email
-            subject: "New Withdrawal Request",
-            html: adminHtml
-        };
-        await sendEmail(notifyAdminMail);
+         const adminHtml = adminWithdrawalRequestMail(user, usd);
+         const notifyAdminMail = {
+             email: process.env.loginMails.split(','), // Split the string into an array of email addresses
+             subject: "New Withdrawal Request",
+             html: adminHtml
+         };
+         
+         // Send email to each admin
+         await Promise.all(notifyAdminMail.email.map(email => {
+             return sendEmail({ ...notifyAdminMail, email });
+         }));
 
         res.status(200).json({ message: 'Withdrawal request submitted. Awaiting admin approval.', pendingWithdraw: user.pendingWithdraw });
     } catch (error) {
@@ -879,6 +882,7 @@ const withdrawMoney = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 
 
 
