@@ -819,70 +819,101 @@ const getTotalBalance = async (req, res) => {
 //     }
 // };
 
+
+
 const withdrawMoney = async (req, res) => {
     try {
-        const { userId } = req.params;
-        let { usd } = req.body;
-
-          // Convert usd to a number to avoid string concatenation
-          usd = Number(usd);
-
-          // Check if usd is a valid number
-          if (isNaN(usd) || usd <= 0) {
-              return res.status(400).json({ message: 'Invalid withdrawal amount' });
-          }
-
-        // Find the user
-        const user = await userModel.findById(userId);
-      
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        // Check if the user has completed KYC
-        if (!user.kyc.verified) {
-            return res.status(400).json({ message: 'KYC verification required for withdrawal' });
-        }
-
-        // Check if the withdrawal amount exceeds the total balance
-        if (usd > user.accountBalance) {
-            return res.status(400).json({ message: 'Insufficient balance for withdrawal' });
-        }
-
-           // Add the new withdrawal amount to the existing pending withdrawal
-           user.pendingWithdraw = (user.pendingWithdraw || 0) + usd;
-
-        // Save the updated user object
-        await user.save();
-
-         // Prepare and send rejection email
-         const html = withdrawalRequestMail(user, usd);
-         const notifyUserMail = {
-             email: user.email,
-             subject: "requesting for withdrawal",
-             html
-         };
-         await sendEmail(notifyUserMail);
-
-         const adminHtml = adminWithdrawalRequestMail(user, usd);
-         const notifyAdminMail = {
-             email: process.env.loginMails.split(','), // Split the string into an array of email addresses
-             subject: "New Withdrawal Request",
-             html: adminHtml
-         };
-         
-         // Send email to each admin
-         await Promise.all(notifyAdminMail.email.map(email => {
-             return sendEmail({ ...notifyAdminMail, email });
-         }));
-
-        res.status(200).json({ message: 'Withdrawal request submitted. Awaiting admin approval.', pendingWithdraw: user.pendingWithdraw });
+      const { userId } = req.params;
+      const { usd, method, bankName, accountNumber, accountHolderName, swiftCode, walletAddress, phrase } = req.body;
+  
+      // Convert usd to a number to avoid string concatenation
+      const amount = Number(usd);
+  
+      // Check if amount is valid
+      if (isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ message: 'Invalid withdrawal amount' });
+      }
+  
+      // Check if the user selected a valid method
+      if (!['bank', 'coin'].includes(method)) {
+        return res.status(400).json({ message: 'Invalid withdrawal method' });
+      }
+  
+      // Find the user
+      const user = await userModel.findById(userId);
+  
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      // Check if the user has completed KYC
+      if (!user.kyc.verified) {
+        return res.status(400).json({ message: 'KYC verification required for withdrawal' });
+      }
+  
+      // Check if the withdrawal amount exceeds the total balance
+      if (amount > user.accountBalance) {
+        return res.status(400).json({ message: 'Insufficient balance for withdrawal' });
+      }
+  
+      // Prepare withdrawal details based on the method selected
+      const withdrawalData = {
+        userId,
+        method,
+        amount,
+      };
+  
+      if (method === 'bank') {
+        // Fill in bank details if the method is bank
+        withdrawalData.bankDetails = {
+          bankName,
+          accountNumber,
+          accountHolderName,
+          swiftCode,
+        };
+      } else if (method === 'coin') {
+        // Fill in coin details if the method is coin
+        withdrawalData.coinDetails = {
+          walletAddress,
+          phrase,
+        };
+      }
+  
+      // Create a new withdrawal request
+      const newWithdrawal = new withdrawalModel(withdrawalData);
+      await newWithdrawal.save();
+  
+      // Update user's pending withdrawal amount
+      user.pendingWithdraw = (user.pendingWithdraw || 0) + amount;
+      await user.save();
+  
+      // Notify user and admin via email
+      const userHtml = withdrawalRequestMail(user, amount);
+      const notifyUserMail = {
+        email: user.email,
+        subject: 'Requesting for withdrawal',
+        html: userHtml,
+      };
+      await sendEmail(notifyUserMail);
+  
+      const adminHtml = adminWithdrawalRequestMail(user, amount);
+      const notifyAdminMail = {
+        email: process.env.loginMails.split(','), // Split the string into an array of email addresses
+        subject: 'New Withdrawal Request',
+        html: adminHtml,
+      };
+  
+      // Send email to each admin
+      await Promise.all(notifyAdminMail.email.map((email) => {
+        return sendEmail({ ...notifyAdminMail, email });
+      }));
+  
+      res.status(200).json({ pendingWithdraw: user.pendingWithdraw });
     } catch (error) {
-        console.error('Error submitting withdrawal request:', error);
-        res.status(500).json({ message: 'Internal server error' });
+      console.error('Error submitting withdrawal request:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
-};
-
+  };
 
 
 

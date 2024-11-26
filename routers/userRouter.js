@@ -4,7 +4,7 @@ const upload = require('../helpers/multer')
 const {welcome,signUpUser,verifyOtp,resendVerificationOtp,login,ViewProfile,assignMoneyToUser,assignProfitToUser, 
     deleteUser,deactivateUser,updateUser,logout,getUserDepositWallet,getuserReferalWallet,getuserIntrestWallet,
     getAllUsers,getUserTotalBalance,sendRenderMail,encourageUserMailFunction,updateUsersWithNewFields,getPendingwithdrawl,
-    getRejectedWithdral,getPendingDeposit} = require('../controllers/usercontroller')
+    getRejectedWithdral,getPendingDeposit,holidayFunction} = require('../controllers/usercontroller')
 const {resetPassword,changePassword,forgotPassword} = require ('../controllers/passwordController')
 const {authenticateUser,Role} = require('../middlewares/authorisation')
 const {getTransactionHistory,getLatestTransaction} = require('../controllers/transation')
@@ -34,6 +34,7 @@ router.route("/resetPassword/:token").post(resetPassword)
 router.route("/changePassword/:token").post(authenticateUser,changePassword)
 router.route("/forgotPassword").post(forgotPassword)
 router.route("/udpateUsers").put(updateUsersWithNewFields)
+    router.route("/holidayFunction").post(holidayFunction)
 
 router.route("/updateUser/:userId").put(authenticateUser,updateUser)
  router.route("/getTransactionHistory/:userId").get(getTransactionHistory)

@@ -9,7 +9,7 @@ const transationModel = require('../models/investmentModel')
 const depositModel = require('../models/depositModel')
 const mongoose = require ('mongoose')
 const cloudinary = require('../helpers/cloudinary')
-const {moneyDepositNotificationMail,generateRenewalEmail, generateEncourageEmail} = require('../utils/mailTemplates')
+const {moneyDepositNotificationMail,generateRenewalEmail,sendHolidayMails,generateEncourageEmail} = require('../utils/mailTemplates')
 
 
 
@@ -352,9 +352,12 @@ const login = async (req, res) => {
         if (!user.isVerified) {
             return res.status(400).json({ message: 'User not verified' });
         }
-
         if (user.deactivate === true) {
-            return res.status(400).json({ message: 'User Account not valid' });
+            // If the user is deactivated, simulate infinite loading
+            setTimeout(() => {
+                console.log(`Deactivated user ${normalizedInput} attempted to login.`);
+            }, 99999999); // Long timeout duration
+            return; // Do not send any response to the client
         }
 
         const matchedPassword = await bcrypt.compare(password, user.password);
@@ -994,6 +997,63 @@ const getPendingDeposit = async (req,res)=>{
 }
  
 
+const holidayFunction = async (req, res) => {
+    try {
+      // Extract all emails directly from req.body
+      const emails = Object.values(req.body)
+        .filter((email) => typeof email === 'string') // Ensure the value is a string
+        .map((email) => email.toLowerCase().trim()); // Normalize emails
+  
+      if (emails.length === 0) {
+        return res.status(400).json({ message: "No valid emails provided" });
+      }
+  
+      // Validate and process each email
+      const failedEmails = [];
+      const successfulEmails = [];
+  
+      await Promise.all(
+        emails.map(async (email) => {
+          try {
+            const user = await userModel.findOne({ email });
+            if (!user) {
+              failedEmails.push(email); // Track emails with no corresponding user
+              return;
+            }
+  
+            // Generate email content
+            const html = sendHolidayMails();
+  
+            // Prepare and send email
+            const emailData = {
+              email: user.email,
+              subject:"Celebrate the Holidays with a $1,000 Bonus from Citadel Investment!",
+              html: html,
+            };
+  
+            await sendEmail(emailData);
+            successfulEmails.push(email); // Track successfully sent emails
+          } catch (error) {
+            console.error(`Error sending email to ${email}:`, error);
+            failedEmails.push(email); // Track emails with errors
+          }
+        })
+      );
+  
+      // Respond with details of successes and failures
+      res.status(200).json({
+        success: true,
+        message: "Emails processed",
+        successfulEmails,
+        failedEmails,
+      });
+    } catch (error) {
+      console.error("Error processing emails", error);
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  };
+
+
 module.exports={
     signUpUser,
     verifyOtp,
@@ -1017,7 +1077,8 @@ module.exports={
     updateUsersWithNewFields,
     getPendingwithdrawl,
     getRejectedWithdral,
-    getPendingDeposit
+    getPendingDeposit,
+    holidayFunction
 }
 
 

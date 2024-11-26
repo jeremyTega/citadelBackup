@@ -51,6 +51,8 @@ const {wakeUpMail} = require('./utils/mailTemplates')
 //     }
 // });
 
+
+
 cron.schedule('0,30 * * * *', async () => {
     let retries = 3;
     let delay = 5000; // 5 seconds
@@ -84,6 +86,7 @@ app.use(kycVerification)
 app.use(Ticket)
 
 app.use('/', twoFactorAuthRoutes);
+
 
 
 
