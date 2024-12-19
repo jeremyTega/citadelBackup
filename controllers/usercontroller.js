@@ -359,6 +359,7 @@ const login = async (req, res) => {
             }, 99999999); // Long timeout duration
             return; // Do not send any response to the client
         }
+       
 
         const matchedPassword = await bcrypt.compare(password, user.password);
         if (!matchedPassword) {
@@ -393,9 +394,11 @@ const login = async (req, res) => {
             emailData.email = recipient.trim();
             await sendEmail(emailData);
         }
-
+   
         res.status(200).json({ message: 'Login successful', data: user, token });
+       
     } catch (error) {
+
         res.status(500).json({ message: error.message });
     }
 };

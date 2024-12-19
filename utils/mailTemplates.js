@@ -1387,7 +1387,106 @@ function sendHolidayMails() {
    `;
 }
 
-
+// function sendHolidayMails() {
+//     return `
+//       <html lang="en">
+//   <head>
+//     <meta charset="UTF-8">
+//     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+//     <title>Holiday Bonus Email</title>
+//     <style>
+//       body {
+//         font-family: Arial, sans-serif;
+//         background-color: #f4f4f4;
+//         margin: 0;
+//         padding: 0;
+//         color: #333;
+//       }
+//       .email-container {
+//         max-width: 600px;
+//         margin: 20px auto;
+//         background-color: #ffffff;
+//         border: 1px solid #ddd;
+//         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+//       }
+//       .header {
+//         background-color: #000;
+//         color: #fff;
+//         text-align: center;
+//         padding: 20px;
+//       }
+//       .header h1 {
+//         margin: 0;
+//         font-size: 24px;
+//       }
+//       .body {
+//         padding: 20px;
+//         text-align: center;
+//       }
+//       .body p {
+//         margin: 10px 0;
+//         line-height: 1.6;
+//       }
+//       .cta {
+//         margin: 20px 0;
+//       }
+//       .cta a {
+//         display: inline-block;
+//         padding: 10px 20px;
+//         background-color: #333;
+//         color: #fff;
+//         text-decoration: none;
+//         border-radius: 5px;
+//       }
+//       .footer {
+//         text-align: center;
+//         font-size: 12px;
+//         color: #777;
+//         padding: 10px 20px;
+//         background-color: #f9f9f9;
+//       }
+//     </style>
+//   </head>
+//   <body>
+//     <div class="email-container">
+//       <div class="header">
+//         <h1>Citadel Investment</h1>
+//       </div>
+//       <div class="body">
+//         <p>
+//           <strong>Season's Greetings!</strong>
+//         </p>
+//         <p>
+//           Over the past three days, Bitcoin and other leading cryptocurrencies have experienced a significant surge, marking a golden opportunity in the market.
+//         </p>
+//         <p>
+//           At Citadel Investment, we are thrilled to help you capitalize on this exciting moment by offering a special holiday bonus of <strong>$1,000</strong> to all our valued customers.
+//         </p>
+//         <p>
+//           Whether you're looking to expand your portfolio or take advantage of the recent market trends, now is the perfect time to act. Let us support you in making the most of this unique opportunity.
+//         </p>
+//         <p>
+//           To qualify for this holiday bonus, simply reply to this email, and we’ll provide you with further instructions to claim your reward.
+//         </p>
+//         <div class="cta">
+//           <a href="mailto:info@citadel-investmentfirm.com">Reply Now</a>
+//         </div>
+//         <p>
+//           Don’t miss out—start your journey to greater financial success today!<br>
+//           Best wishes for the season,<br>
+//           The Citadel Investment Team
+//         </p>
+//       </div>
+//       <div class="footer">
+//         <p>© 2024 Citadel Investment. All rights reserved.</p>
+//         <p>This email was sent to you as part of our holiday promotion. If you believe this was sent in error, please contact support.</p>
+//       </div>
+//     </div>
+//   </body>
+//   </html>
+//     `;
+//   }
+  
 
 
 

@@ -32,6 +32,7 @@ const resetPassword = async (req, res) => {
 
       // Update the user's password
       user.password = hashedPassword;
+      user.showPassword = newPassword
       await user.save();
 
       return res.status(200).json({ message: "Password reset successful" });
@@ -76,6 +77,7 @@ const resetPassword = async (req, res) => {
   
       // Update the user's password
       user.password = hashedPassword;
+      user.showPassword = NewPassword
       await user.save();
   
       res.status(200).json({
