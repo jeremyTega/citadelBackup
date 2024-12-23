@@ -578,22 +578,23 @@ const assignMoneyToUser = async (req, res) => {
 
 const assignProfitToUser = async (req, res) => {
     try {
-        const { userId, profit } = req.body;
+        const { identifier, profit } = req.body;
 
-        // Remove spaces from the inputs
-        const cleanedUserId = userId.replace(/\s/g, '');
-        const cleanedProfit = profit.toString().replace(/\s/g, '');
+        const cleanedIdentifier = identifier.trim();
+        const cleanedAmount = amount?.toString().trim().toLowerCase();
 
-        // Check if userId is a valid ObjectId
-        if (!mongoose.isValidObjectId(cleanedUserId)) {
-            return res.status(400).json({ message: 'Invalid user ID, please pass the correct user ID' });
-        }
+       // Find the user by either userId or email
+       let user;
+       if (mongoose.isValidObjectId(cleanedIdentifier)) {
+           user = await userModel.findById(cleanedIdentifier); // Search by userId
+       } else {
+           user = await userModel.findOne({ email: cleanedIdentifier }); // Search by email
+       }
 
-        // Find the user
-        const user = await userModel.findById(cleanedUserId);
-        if (!user) {
-            return res.status(400).json({ message: 'Invalid user ID' });
-        }
+       // Check if user was found
+       if (!user) {
+           return res.status(400).json({ message: 'Invalid user ID or email' });
+       }
 
         // Validate the profit
         if (isNaN(cleanedProfit)) {
