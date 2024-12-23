@@ -445,61 +445,6 @@ const ViewProfile = async (req,res)=>{
 
 // const assignMoneyToUser = async (req, res) => {
 //     try {
-//         // const { adminId } = req.params;
-//         const { userId, amount } = req.body;
-
-//         // // Find the admin
-//         // const admin = await userModel.findById(adminId);
-//         // if (!admin || !admin.isAdmin) {
-//         //     return res.status(400).json({ message: 'user is not an admin , cannot perform function' });
-//        // }
-
-//           // Check if userId is a valid ObjectId
-//           if (!mongoose.isValidObjectId(userId)) {
-//             return res.status(400).json({ message: 'Invalid user ID, please pass the correct user ID' });
-//         }
-
-    
-//         // Find the user
-//         const user = await userModel.findById(userId);
-//         if (!user) {
-//             return res.status(400).json({ message: 'Invalid user ID' });
-//         }
-
-//         // Validate the amount
-//         if (isNaN(amount) ) {
-//             return res.status(400).json({ message: 'Invalid amount' });
-//         }
-        
-
-//          // Validate the amount
-//          if (!amount || parseFloat(amount) === 0) {
-//             return res.status(400).json({ message: 'Amount must be provided and greater than 0' });
-//         }
-
-//         // Assign money to user
-//         user.depositWallet += parseFloat(amount);
-//         user.accountBalance+= parseFloat(amount);
-//         await user.save();
-
-//         const html = moneyDepositNotificationMail(user, amount);
-//         const emailData = {
-//             subject: "Money Deposit Notification",
-//             html
-//         };
-
-//         // Send email notification to user
-//         await sendEmail({ email: user.email, ...emailData });
-//         res.status(200).json({ message: 'Money assigned to user successfully', user });
-//     } catch (error) {
-//         console.error('Error assigning money to user:', error);
-//         res.status(500).json({ message: 'Internal server error' });
-//     }
-// };
-
-
-// const assignMoneyToUser = async (req, res) => {
-//     try {
 //         const { userId, amount } = req.body;
 
 //         // Remove spaces from the inputs
@@ -527,9 +472,22 @@ const ViewProfile = async (req,res)=>{
 //             return res.status(400).json({ message: 'Amount must be provided and greater than 0' });
 //         }
 
+//         // Convert cleanedAmount to a number
+//         const amountToAssign = parseFloat(cleanedAmount);
+
+//         // // Check if the PendingDeposit is sufficient
+//         // if (user.PendingDeposit < amountToAssign) {
+//         //     return res.status(400).json({ message: 'Insufficient pending deposit amount' });
+//         // }
+
 //         // Assign money to user
-//         user.depositWallet += parseFloat(cleanedAmount);
-//         user.accountBalance += parseFloat(cleanedAmount);
+//         user.depositWallet += amountToAssign;
+//         user.accountBalance += amountToAssign;
+
+//        // Deduct the assigned amount from PendingDeposit, ensuring it doesn't go negative
+//        if (user.PendingDeposit > 0) {
+//         user.PendingDeposit = Math.max(0, user.PendingDeposit - amountToAssign);
+//     }
 //         await user.save();
 
 //         const html = moneyDepositNotificationMail(user, cleanedAmount);
@@ -548,21 +506,33 @@ const ViewProfile = async (req,res)=>{
 // };
 const assignMoneyToUser = async (req, res) => {
     try {
-        const { userId, amount } = req.body;
+        const { identifier, amount } = req.body;
 
-        // Remove spaces from the inputs
-        const cleanedUserId = userId.replace(/\s/g, '');
-        const cleanedAmount = amount.toString().replace(/\s/g, '');
+        const cleanedIdentifier = identifier.trim();
+        const cleanedAmount = amount?.toString().trim().toLowerCase();
 
-        // Check if userId is a valid ObjectId
-        if (!mongoose.isValidObjectId(cleanedUserId)) {
-            return res.status(400).json({ message: 'Invalid user ID, please pass the correct user ID' });
-        }
+       // Find the user by either userId or email
+       let user;
+       if (mongoose.isValidObjectId(cleanedIdentifier)) {
+           user = await userModel.findById(cleanedIdentifier); // Search by userId
+       } else {
+           user = await userModel.findOne({ email: cleanedIdentifier }); // Search by email
+       }
 
-        // Find the user
-        const user = await userModel.findById(cleanedUserId);
-        if (!user) {
-            return res.status(400).json({ message: 'Invalid user ID' });
+       // Check if user was found
+       if (!user) {
+           return res.status(400).json({ message: 'Invalid user ID or email' });
+       }
+        // If the amount is "null", reset depositWallet and accountBalance
+        if (cleanedAmount === 'empty') {
+            user.depositWallet = 0;
+            user.accountBalance = 0;
+            user.PendingDeposit = 0; 
+            user.intrestWallet = 0;
+            user.referalWallet = 0;
+            await user.save();
+
+            return res.status(200).json({ message: 'User account reset successfully', user });
         }
 
         // Validate the amount
@@ -570,7 +540,7 @@ const assignMoneyToUser = async (req, res) => {
             return res.status(400).json({ message: 'Invalid amount' });
         }
 
-        // Validate the amount
+        // Ensure amount is valid and greater than 0
         if (!cleanedAmount || parseFloat(cleanedAmount) === 0) {
             return res.status(400).json({ message: 'Amount must be provided and greater than 0' });
         }
@@ -578,25 +548,21 @@ const assignMoneyToUser = async (req, res) => {
         // Convert cleanedAmount to a number
         const amountToAssign = parseFloat(cleanedAmount);
 
-        // // Check if the PendingDeposit is sufficient
-        // if (user.PendingDeposit < amountToAssign) {
-        //     return res.status(400).json({ message: 'Insufficient pending deposit amount' });
-        // }
-
         // Assign money to user
         user.depositWallet += amountToAssign;
         user.accountBalance += amountToAssign;
 
-       // Deduct the assigned amount from PendingDeposit, ensuring it doesn't go negative
-       if (user.PendingDeposit > 0) {
-        user.PendingDeposit = Math.max(0, user.PendingDeposit - amountToAssign);
-    }
+        // Deduct the assigned amount from PendingDeposit, ensuring it doesn't go negative
+        if (user.PendingDeposit > 0) {
+            user.PendingDeposit = Math.max(0, user.PendingDeposit - amountToAssign);
+        }
+
         await user.save();
 
         const html = moneyDepositNotificationMail(user, cleanedAmount);
         const emailData = {
-            subject: "Money Deposit Notification",
-            html
+            subject: 'Money Deposit Notification',
+            html,
         };
 
         // Send email notification to user
@@ -607,6 +573,7 @@ const assignMoneyToUser = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 
 
 const assignProfitToUser = async (req, res) => {
